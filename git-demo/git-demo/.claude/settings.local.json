@@ -1,8 +1,0 @@
-{
-  "permissions": {
-    "allow": [
-      "Bash(python 俄罗斯方块.py)",
-      "Bash(pip install:*)"
-    ]
-  }
-}

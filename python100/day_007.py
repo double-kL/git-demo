@@ -49,7 +49,7 @@ for g in range(1,21):
                 print(f'公鸡：{g},母鸡：{m}，小鸡：{x}')
 """
 
-"""
+
 import random
 money=1000
 while money>0:
@@ -80,7 +80,7 @@ while money>0:
     if a==3:
         money=money-bet
 print('你破产了，游戏结束；')       
-"""
+
 
 
 
