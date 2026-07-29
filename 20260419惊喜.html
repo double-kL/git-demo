@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>动态爱心</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: #000;
+            overflow: hidden;
+        }
+
+        canvas {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        const particles = [];
+        const heartPoints = [];
+        const sparkles = [];
+        const bgParticles = [];
+        let time = 0;
+
+        // 生成爱心形状的点
+        function generateHeartPoints() {
+            heartPoints.length = 0;
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            const scale = 15;
+
+            for (let t = 0; t < Math.PI * 2; t += 0.01) {
+                const x = scale * (16 * Math.pow(Math.sin(t), 3));
+                const y = -scale * (13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t));
+                heartPoints.push({
+                    x: centerX + x,
+                    y: centerY + y
+                });
+            }
+        }
+
+        class Particle {
+            constructor() {
+                this.reset();
+            }
+
+            reset() {
+                const point = heartPoints[Math.floor(Math.random() * heartPoints.length)];
+                this.targetX = point.x;
+                this.targetY = point.y;
+
+                const angle = Math.random() * Math.PI * 2;
+                const radius = Math.random() * 300 + 150;
+                this.x = canvas.width / 2 + Math.cos(angle) * radius;
+                this.y = canvas.height / 2 + Math.sin(angle) * radius;
+
+                this.size = Math.random() * 3 + 1;
+                this.speedX = (this.targetX - this.x) * 0.01;
+                this.speedY = (this.targetY - this.y) * 0.01;
+                this.opacity = 0;
+                this.fadeIn = true;
+                this.life = 0;
+                this.hue = Math.random() * 60 + 320;
+            }
+
+            update() {
+                if (this.fadeIn) {
+                    this.opacity += 0.02;
+                    if (this.opacity >= 1) {
+                        this.fadeIn = false;
+                        this.opacity = 1;
+                    }
+                }
+
+                this.x += this.speedX;
+                this.y += this.speedY;
+
+                const dx = this.targetX - this.x;
+                const dy = this.targetY - this.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+
+                if (distance < 1) {
+                    this.life++;
+                    if (this.life > 100) {
+                        this.reset();
+                    }
+                } else {
+                    this.speedX = dx * 0.01;
+                    this.speedY = dy * 0.01;
+                }
+            }
+
+            draw() {
+                ctx.save();
+                ctx.globalAlpha = this.opacity;
+
+                const gradient = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, this.size * 2);
+                gradient.addColorStop(0, `hsl(${this.hue}, 100%, 60%)`);
+                gradient.addColorStop(0.5, `hsl(${this.hue}, 100%, 50%)`);
+                gradient.addColorStop(1, 'rgba(255, 0, 102, 0)');
+
+                ctx.fillStyle = gradient;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size * 2, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            }
+        }
+
+        class Sparkle {
+            constructor(x, y) {
+                this.x = x;
+                this.y = y;
+                this.size = Math.random() * 3 + 2;
+                this.speedX = (Math.random() - 0.5) * 2;
+                this.speedY = Math.random() * -3 - 1;
+                this.opacity = 1;
+                this.life = 0;
+                this.maxLife = 60;
+                this.hue = Math.random() * 60 + 320;
+            }
+
+            update() {
+                this.x += this.speedX;
+                this.y += this.speedY;
+                this.speedY += 0.1;
+                this.life++;
+                this.opacity = 1 - (this.life / this.maxLife);
+            }
+
+            draw() {
+                ctx.save();
+                ctx.globalAlpha = this.opacity;
+                ctx.fillStyle = `hsl(${this.hue}, 100%, 70%)`;
+                ctx.shadowBlur = 10;
+                ctx.shadowColor = `hsl(${this.hue}, 100%, 50%)`;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            }
+        }
+
+        class BackgroundParticle {
+            constructor() {
+                this.reset();
+            }
+
+            reset() {
+                this.x = Math.random() * canvas.width + canvas.width * 0.2;
+                this.y = Math.random() * canvas.height - canvas.height * 0.2;
+                this.length = Math.random() * 100 + 60;
+                this.speed = Math.random() * 6 + 8;
+                this.angle = Math.PI / 4 + (Math.random() - 0.5) * 0.3;
+                this.opacity = Math.random() * 0.6 + 0.4;
+            }
+
+            update() {
+                this.x -= Math.cos(this.angle) * this.speed;
+                this.y += Math.sin(this.angle) * this.speed;
+
+                if (this.y > canvas.height + 100 || this.x < -100) {
+                    this.reset();
+                }
+            }
+
+            draw() {
+                ctx.save();
+                ctx.globalAlpha = this.opacity;
+
+                const gradient = ctx.createLinearGradient(
+                    this.x, this.y,
+                    this.x + Math.cos(this.angle) * this.length,
+                    this.y - Math.sin(this.angle) * this.length
+                );
+                gradient.addColorStop(0, 'rgba(255, 255, 255, 0)');
+                gradient.addColorStop(0.3, 'rgba(200, 220, 255, 0.8)');
+                gradient.addColorStop(1, 'rgba(255, 255, 255, 1)');
+
+                ctx.strokeStyle = gradient;
+                ctx.lineWidth = 2.5;
+                ctx.lineCap = 'round';
+
+                ctx.beginPath();
+                ctx.moveTo(this.x, this.y);
+                ctx.lineTo(
+                    this.x + Math.cos(this.angle) * this.length,
+                    this.y - Math.sin(this.angle) * this.length
+                );
+                ctx.stroke();
+
+                ctx.shadowBlur = 15;
+                ctx.shadowColor = 'rgba(200, 220, 255, 0.8)';
+                ctx.fillStyle = 'rgba(255, 255, 255, 1)';
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, 2.5, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.restore();
+            }
+        }
+
+        generateHeartPoints();
+
+        for (let i = 0; i < 1000; i++) {
+            particles.push(new Particle());
+        }
+
+        for (let i = 0; i < 50; i++) {
+            bgParticles.push(new BackgroundParticle());
+        }
+
+        function animate() {
+            time++;
+
+            // 深色星空背景
+            ctx.fillStyle = 'rgba(10, 10, 30, 0.3)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // 绘制背景流星
+            bgParticles.forEach(particle => {
+                particle.update();
+                particle.draw();
+            });
+
+            // 绘制闪烁星星
+            if (Math.random() < 0.3) {
+                const x = Math.random() * canvas.width;
+                const y = Math.random() * canvas.height;
+                const size = Math.random() * 2;
+                ctx.fillStyle = `rgba(255, 255, 255, ${Math.random() * 0.8})`;
+                ctx.beginPath();
+                ctx.arc(x, y, size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            // 爱心脉动效果
+            const pulse = Math.sin(time * 0.05) * 0.1 + 1;
+            ctx.save();
+            ctx.translate(canvas.width / 2, canvas.height / 2);
+            ctx.scale(pulse, pulse);
+            ctx.translate(-canvas.width / 2, -canvas.height / 2);
+
+            particles.forEach(particle => {
+                particle.update();
+                particle.draw();
+            });
+
+            ctx.restore();
+
+            // 随机生成火花
+            if (Math.random() < 0.3) {
+                const point = heartPoints[Math.floor(Math.random() * heartPoints.length)];
+                sparkles.push(new Sparkle(point.x, point.y));
+            }
+
+            // 更新和绘制火花
+            for (let i = sparkles.length - 1; i >= 0; i--) {
+                sparkles[i].update();
+                sparkles[i].draw();
+                if (sparkles[i].life >= sparkles[i].maxLife) {
+                    sparkles.splice(i, 1);
+                }
+            }
+
+            // 绘制光晕
+            ctx.save();
+            ctx.globalAlpha = 0.3;
+            const glowGradient = ctx.createRadialGradient(
+                canvas.width / 2, canvas.height / 2, 0,
+                canvas.width / 2, canvas.height / 2, 300
+            );
+            glowGradient.addColorStop(0, 'rgba(255, 0, 100, 0.3)');
+            glowGradient.addColorStop(1, 'rgba(255, 0, 100, 0)');
+            ctx.fillStyle = glowGradient;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.restore();
+
+            // 绘制文字
+            ctx.save();
+            const textY = canvas.height / 2 + 280;
+            const textOpacity = Math.abs(Math.sin(time * 0.03));
+
+            ctx.font = 'bold 48px "Microsoft YaHei", sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+
+            // 文字发光效果
+            ctx.shadowBlur = 20;
+            ctx.shadowColor = `rgba(255, 100, 150, ${textOpacity})`;
+
+            // 渐变文字
+            const textGradient = ctx.createLinearGradient(
+                canvas.width / 2 - 100, textY,
+                canvas.width / 2 + 100, textY
+            );
+            textGradient.addColorStop(0, '#ff0066');
+            textGradient.addColorStop(0.5, '#ff66cc');
+            textGradient.addColorStop(1, '#ff0066');
+
+            ctx.fillStyle = textGradient;
+            ctx.globalAlpha = 0.8 + textOpacity * 0.2;
+            ctx.fillText('李馨蕾', canvas.width / 2, textY);
+
+            // 文字描边
+            ctx.strokeStyle = `rgba(255, 255, 255, ${textOpacity * 0.5})`;
+            ctx.lineWidth = 2;
+            ctx.strokeText('李馨蕾', canvas.width / 2, textY);
+
+            ctx.restore();
+
+            requestAnimationFrame(animate);
+        }
+
+        animate();
+
+        window.addEventListener('resize', () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            generateHeartPoints();
+        });
+
+        // 点击产生爆炸效果
+        canvas.addEventListener('click', (e) => {
+            for (let i = 0; i < 30; i++) {
+                sparkles.push(new Sparkle(e.clientX, e.clientY));
+            }
+        });
+    </script>
+</body>
+</html>

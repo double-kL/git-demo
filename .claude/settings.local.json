@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python -m alembic revision -m \"add_performance_indexes\")",
+      "Bash(xargs -I {} sh -c 'echo \"=== {} ===\" && head -20 \"{}\"')",
+      "Bash(python -c \"import markdown; import pdfkit\")"
+    ]
+  }
+}
