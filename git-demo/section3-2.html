@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>主动应变，战略抉择的时代昭示</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: "Microsoft YaHei", "SimHei", Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            overflow: hidden;
+        }
+
+        .slide-container {
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            overflow-x: auto;
+            scroll-snap-type: x mandatory;
+            scroll-behavior: smooth;
+        }
+
+        .slide {
+            min-width: 100vw;
+            height: 100vh;
+            scroll-snap-align: start;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 60px;
+            position: relative;
+        }
+
+        /* 标题页 */
+        .slide.title-slide {
+            background: linear-gradient(135deg, #c31432 0%, #240b36 100%);
+        }
+
+        .slide.title-slide h1 {
+            font-size: 4em;
+            color: #fff;
+            text-align: center;
+            margin-bottom: 30px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            animation: fadeInDown 1s ease-out;
+        }
+
+        .slide.title-slide .subtitle {
+            font-size: 1.8em;
+            color: #ffd700;
+            text-align: center;
+            animation: fadeInUp 1s ease-out 0.3s both;
+        }
+
+        /* 内容页通用样式 */
+        .slide.content-slide {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+        }
+
+        .slide h2 {
+            font-size: 3em;
+            color: #ffd700;
+            margin-bottom: 50px;
+            text-align: center;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            animation: fadeInDown 0.8s ease-out;
+        }
+
+        .content-box {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 50px;
+            max-width: 1200px;
+            width: 90%;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            animation: fadeInUp 0.8s ease-out 0.3s both;
+        }
+
+        .content-item {
+            margin-bottom: 40px;
+            animation: fadeInLeft 0.6s ease-out both;
+        }
+
+        .content-item:nth-child(1) { animation-delay: 0.5s; }
+        .content-item:nth-child(2) { animation-delay: 0.7s; }
+        .content-item:nth-child(3) { animation-delay: 0.9s; }
+        .content-item:nth-child(4) { animation-delay: 1.1s; }
+
+        .content-item h3 {
+            font-size: 2em;
+            color: #c31432;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+        }
+
+        .content-item h3::before {
+            content: "●";
+            margin-right: 15px;
+            font-size: 0.8em;
+        }
+
+        .content-item p {
+            font-size: 1.4em;
+            line-height: 1.8;
+            color: #333;
+            margin-left: 40px;
+        }
+
+        .highlight {
+            color: #c31432;
+            font-weight: bold;
+        }
+
+        .emphasis {
+            background: linear-gradient(120deg, #ffd700 0%, #ffed4e 100%);
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+
+        /* 当下联系页特殊样式 */
+        .slide.modern-slide {
+            background: linear-gradient(135deg, #134e5e 0%, #71b280 100%);
+        }
+
+        .modern-box {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 50px;
+            max-width: 1300px;
+            width: 90%;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+
+        .modern-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+            margin-top: 30px;
+        }
+
+        .modern-item {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 30px;
+            border-radius: 15px;
+            color: white;
+            animation: zoomIn 0.6s ease-out both;
+        }
+
+        .modern-item:nth-child(1) { animation-delay: 0.4s; }
+        .modern-item:nth-child(2) { animation-delay: 0.6s; }
+        .modern-item:nth-child(3) { animation-delay: 0.8s; }
+        .modern-item:nth-child(4) { animation-delay: 1s; }
+
+        .modern-item h4 {
+            font-size: 1.8em;
+            margin-bottom: 15px;
+            border-bottom: 2px solid #ffd700;
+            padding-bottom: 10px;
+        }
+
+        .modern-item p {
+            font-size: 1.3em;
+            line-height: 1.7;
+        }
+
+        /* 导航指示器 */
+        .nav-dots {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 15px;
+            z-index: 1000;
+        }
+
+        .nav-dot {
+            width: 15px;
+            height: 15px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.5);
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .nav-dot.active {
+            background: #ffd700;
+            transform: scale(1.3);
+        }
+
+        /* 动画定义 */
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeInLeft {
+            from {
+                opacity: 0;
+                transform: translateX(-50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        @keyframes zoomIn {
+            from {
+                opacity: 0;
+                transform: scale(0.8);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        /* 页码 */
+        .page-number {
+            position: absolute;
+            bottom: 20px;
+            right: 40px;
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 1.2em;
+        }
+    </style>
+</head>
+<body>
+    <div class="slide-container" id="slideContainer">
+        <!-- 标题页 -->
+        <div class="slide title-slide">
+            <h1>主动应变，战略抉择的时代昭示</h1>
+            <div class="subtitle">从遵义会议精神看当代中国发展</div>
+            <div class="page-number">1/5</div>
+        </div>
+
+        <!-- 第一页：独立自主 -->
+        <div class="slide content-slide">
+            <h2>独立自主：走自己的路</h2>
+            <div class="content-box">
+                <div class="content-item">
+                    <h3>历史启示</h3>
+                    <p>遵义会议确立了<span class="emphasis">独立自主解决中国革命问题</span>的原则，摆脱了教条主义束缚，开创了马克思主义中国化的新阶段。</p>
+                </div>
+                <div class="content-item">
+                    <h3>当代价值</h3>
+                    <p>坚持<span class="highlight">中国特色社会主义道路</span>，不照搬西方模式，不走封闭僵化的老路，也不走改旗易帜的邪路。</p>
+                </div>
+                <div class="content-item">
+                    <h3>实践意义</h3>
+                    <p>在科技创新、经济发展、社会治理等领域，坚持<span class="emphasis">自主创新</span>，掌握核心技术，把发展主动权牢牢掌握在自己手中。</p>
+                </div>
+            </div>
+            <div class="page-number">2/5</div>
+        </div>
+
+        <!-- 第二页：勇于纠错 -->
+        <div class="slide content-slide">
+            <h2>勇于纠错：坚持真理、修正错误</h2>
+            <div class="content-box">
+                <div class="content-item">
+                    <h3>历史启示</h3>
+                    <p>遵义会议敢于<span class="emphasis">纠正"左"倾错误</span>，体现了中国共产党实事求是、勇于自我革命的政治勇气。</p>
+                </div>
+                <div class="content-item">
+                    <h3>制度密码</h3>
+                    <p>建立健全<span class="highlight">自我纠错机制</span>，通过民主集中制、批评与自我批评等制度，保持党的生机活力。</p>
+                </div>
+                <div class="content-item">
+                    <h3>永葆活力</h3>
+                    <p>从改革开放到新时代全面深化改革，中国共产党始终保持<span class="emphasis">自我革新</span>的勇气，不断推进理论创新、实践创新、制度创新。</p>
+                </div>
+            </div>
+            <div class="page-number">3/5</div>
+        </div>
+
+        <!-- 第三页：团结统一 -->
+        <div class="slide content-slide">
+            <h2>团结统一：凝聚共识应对挑战</h2>
+            <div class="content-box">
+                <div class="content-item">
+                    <h3>历史启示</h3>
+                    <p>遵义会议在<span class="emphasis">生死存亡关头</span>实现全党团结统一，形成坚强领导核心，为长征胜利奠定基础。</p>
+                </div>
+                <div class="content-item">
+                    <h3>宝贵经验</h3>
+                    <p>维护<span class="highlight">党中央权威和集中统一领导</span>，是应对各种风险挑战、战胜一切艰难险阻的根本保证。</p>
+                </div>
+                <div class="content-item">
+                    <h3>现实意义</h3>
+                    <p>面对百年未有之大变局，更需要<span class="emphasis">全党全国人民团结一心</span>，凝聚起实现中华民族伟大复兴的磅礴力量。</p>
+                </div>
+            </div>
+            <div class="page-number">4/5</div>
+        </div>
+
+        <!-- 第四页：联系当下 -->
+        <div class="slide modern-slide">
+            <h2>联系当下：在国际变局中的战略定力</h2>
+            <div class="modern-box">
+                <div class="modern-content">
+                    <div class="modern-item">
+                        <h4>🌍 和平发展道路</h4>
+                        <p>坚持独立自主的和平外交政策，推动构建人类命运共同体，以中国式现代化为世界提供新选择。</p>
+                    </div>
+                    <div class="modern-item">
+                        <h4>🤝 合作共赢理念</h4>
+                        <p>倡导"一带一路"倡议，推动全球治理体系改革，在开放中实现互利共赢，反对单边主义和霸权主义。</p>
+                    </div>
+                    <div class="modern-item">
+                        <h4>💪 战略定力保持</h4>
+                        <p>面对外部压力和挑战，保持战略清醒，集中精力办好自己的事，以自身发展的确定性应对外部环境的不确定性。</p>
+                    </div>
+                    <div class="modern-item">
+                        <h4>🚀 科技自立自强</h4>
+                        <p>加快实现高水平科技自立自强，突破"卡脖子"技术，在关键领域掌握主动权，为民族复兴提供坚实支撑。</p>
+                    </div>
+                </div>
+            </div>
+            <div class="page-number">5/5</div>
+        </div>
+    </div>
+
+    <!-- 导航点 -->
+    <div class="nav-dots">
+        <div class="nav-dot active" onclick="goToSlide(0)"></div>
+        <div class="nav-dot" onclick="goToSlide(1)"></div>
+        <div class="nav-dot" onclick="goToSlide(2)"></div>
+        <div class="nav-dot" onclick="goToSlide(3)"></div>
+        <div class="nav-dot" onclick="goToSlide(4)"></div>
+    </div>
+
+    <script>
+        const container = document.getElementById('slideContainer');
+        const dots = document.querySelectorAll('.nav-dot');
+
+        function goToSlide(index) {
+            const slideWidth = window.innerWidth;
+            container.scrollTo({
+                left: slideWidth * index,
+                behavior: 'smooth'
+            });
+        }
+
+        // 监听滚动更新导航点
+        container.addEventListener('scroll', () => {
+            const slideWidth = window.innerWidth;
+            const currentSlide = Math.round(container.scrollLeft / slideWidth);
+
+            dots.forEach((dot, index) => {
+                if (index === currentSlide) {
+                    dot.classList.add('active');
+                } else {
+                    dot.classList.remove('active');
+                }
+            });
+        });
+
+        // 键盘导航
+        document.addEventListener('keydown', (e) => {
+            const slideWidth = window.innerWidth;
+            const currentSlide = Math.round(container.scrollLeft / slideWidth);
+
+            if (e.key === 'ArrowRight' && currentSlide < 4) {
+                goToSlide(currentSlide + 1);
+            } else if (e.key === 'ArrowLeft' && currentSlide > 0) {
+                goToSlide(currentSlide - 1);
+            }
+        });
+    </script>
+</body>
+</html>
