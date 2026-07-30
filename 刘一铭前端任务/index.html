@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DiffProtect Pro - 人脸隐私保护平台</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div id="app">
+        <!-- 导航栏 -->
+        <nav class="navbar">
+            <div class="container">
+                <div class="nav-brand">
+                    <h1>🛡️ DiffProtect Pro</h1>
+                </div>
+                <div class="nav-menu">
+                    <a href="#home" @click="currentPage = 'home'" :class="{active: currentPage === 'home'}">首页</a>
+                    <a href="#verify" @click="currentPage = 'verify'" :class="{active: currentPage === 'verify'}">人脸验证</a>
+                    <template v-if="!isLoggedIn">
+                        <a href="#login" @click="currentPage = 'login'" :class="{active: currentPage === 'login'}">登录</a>
+                        <a href="#register" @click="currentPage = 'register'" :class="{active: currentPage === 'register'}">注册</a>
+                    </template>
+                    <template v-else>
+                        <a href="#feed" @click="currentPage = 'feed'" :class="{active: currentPage === 'feed'}">动态</a>
+                        <a href="#settings" @click="currentPage = 'settings'" :class="{active: currentPage === 'settings'}">设置</a>
+                        <a href="#" @click="logout" class="logout-btn">退出 ({{ user.nickname }})</a>
+                    </template>
+                </div>
+            </div>
+        </nav>
+
+        <!-- 主内容区 -->
+        <main class="main-content">
+            <!-- 首页 -->
+            <div v-if="currentPage === 'home'" class="page home-page">
+                <div class="container">
+                    <div class="hero">
+                        <h2>🔒 保护您的人脸隐私</h2>
+                        <p>基于 DiffProtect + DreamID-V 的智能人脸保护系统</p>
+                        <div class="hero-actions">
+                            <button @click="currentPage = 'verify'" class="btn btn-primary">体验人脸验证</button>
+                            <button v-if="!isLoggedIn" @click="currentPage = 'register'" class="btn btn-secondary">立即注册</button>
+                        </div>
+                    </div>
+
+                    <div class="features">
+                        <div class="feature-card">
+                            <div class="feature-icon">🎭</div>
+                            <h3>多模型验证</h3>
+                            <p>4个FR模型同时验证,确保保护效果</p>
+                        </div>
+                        <div class="feature-card">
+                            <div class="feature-icon">⚡</div>
+                            <h3>三级保护强度</h3>
+                            <p>轻度/中度/重度可选,平衡效果与视觉</p>
+                        </div>
+                        <div class="feature-card">
+                            <div class="feature-icon">🎬</div>
+                            <h3>动态照片保护</h3>
+                            <p>支持视频人脸保护,动态场景适用</p>
+                        </div>
+                        <div class="feature-card">
+                            <div class="feature-icon">👥</div>
+                            <h3>选择性保护</h3>
+                            <p>多人照片中指定保护特定人脸</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 人脸验证演示页 -->
+            <div v-if="currentPage === 'verify'" class="page verify-page">
+                <div class="container">
+                    <h2>👁️ 人脸验证演示</h2>
+                    <p class="page-desc">上传两张照片,系统将使用4个FR模型分别判断是否为同一人</p>
+
+                    <div class="verify-container">
+                        <div class="upload-section">
+                            <div class="upload-box">
+                                <label for="imageA" class="upload-label">
+                                    <div v-if="!verifyImages.imageA" class="upload-placeholder">
+                                        <span class="upload-icon">📷</span>
+                                        <span>点击上传照片 A</span>
+                                    </div>
+                                    <img v-else :src="verifyImages.imageA" alt="Image A" class="preview-image">
+                                </label>
+                                <input type="file" id="imageA" @change="handleImageUpload($event, 'imageA')" accept="image/*" hidden>
+                            </div>
+
+                            <div class="vs-divider">VS</div>
+
+                            <div class="upload-box">
+                                <label for="imageB" class="upload-label">
+                                    <div v-if="!verifyImages.imageB" class="upload-placeholder">
+                                        <span class="upload-icon">📷</span>
+                                        <span>点击上传照片 B</span>
+                                    </div>
+                                    <img v-else :src="verifyImages.imageB" alt="Image B" class="preview-image">
+                                </label>
+                                <input type="file" id="imageB" @change="handleImageUpload($event, 'imageB')" accept="image/*" hidden>
+                            </div>
+                        </div>
+
+                        <!-- 模型选择 -->
+                        <div class="model-selection">
+                            <h3>选择验证模型:</h3>
+                            <div class="model-toggles">
+                                <label class="model-toggle">
+                                    <input type="checkbox" v-model="selectedModels.ir152">
+                                    <span>IR-152</span>
+                                </label>
+                                <label class="model-toggle">
+                                    <input type="checkbox" v-model="selectedModels.irse50">
+                                    <span>IR-SE-50</span>
+                                </label>
+                                <label class="model-toggle">
+                                    <input type="checkbox" v-model="selectedModels.facenet">
+                                    <span>FaceNet</span>
+                                </label>
+                                <label class="model-toggle">
+                                    <input type="checkbox" v-model="selectedModels.mobile_face">
+                                    <span>MobileFace</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <button @click="verifyFaces" :disabled="!canVerify || verifying" class="btn btn-primary btn-large">
+                            {{ verifying ? '验证中...' : '开始验证' }}
+                        </button>
+
+                        <!-- 验证结果 -->
+                        <div v-if="verifyResult" class="verify-results">
+                            <h3>验证结果</h3>
+
+                            <div v-if="!verifyResult.face_detected_a || !verifyResult.face_detected_b" class="error-msg">
+                                ⚠️ {{ !verifyResult.face_detected_a ? '照片A' : '照片B' }}未检测到人脸
+                            </div>
+
+                            <div v-else>
+                                <div class="model-results">
+                                    <div v-for="(result, modelKey) in verifyResult.results" :key="modelKey"
+                                         class="model-result-card" :class="result.verdict">
+                                        <div class="model-header">
+                                            <h4>{{ result.label }}</h4>
+                                            <span class="verdict-badge" :class="result.verdict">
+                                                {{ result.verdict === 'same_person' ? '✓ 同一人' : '✗ 不同人' }}
+                                            </span>
+                                        </div>
+                                        <div class="similarity-bar">
+                                            <div class="bar-fill" :style="{width: (result.similarity * 100) + '%'}"></div>
+                                        </div>
+                                        <div class="model-stats">
+                                            <span>相似度: {{ (result.similarity * 100).toFixed(1) }}%</span>
+                                            <span>阈值: {{ (result.threshold * 100).toFixed(0) }}%</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="summary-card" :class="verifyResult.summary.consensus">
+                                    <h3>综合结论</h3>
+                                    <div class="consensus-result">
+                                        <span class="consensus-icon">
+                                            {{ verifyResult.summary.consensus === 'same_person' ? '✓' : '✗' }}
+                                        </span>
+                                        <span class="consensus-text">
+                                            {{ verifyResult.summary.consensus === 'same_person' ? '判定为同一人' : '判定为不同人' }}
+                                        </span>
+                                    </div>
+                                    <div class="consensus-votes">
+                                        <span>同一人票数: {{ verifyResult.summary.same_votes }}/{{ verifyResult.summary.total_models }}</span>
+                                        <span>不同人票数: {{ verifyResult.summary.different_votes }}/{{ verifyResult.summary.total_models }}</span>
+                                    </div>
+                                    <p class="consensus-rule">{{ verifyResult.summary.consensus_rule }}</p>
+                                    <p class="processing-time">处理耗时: {{ verifyResult.processing_time }}s</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 登录页 -->
+            <div v-if="currentPage === 'login'" class="page auth-page">
+                <div class="container">
+                    <div class="auth-form">
+                        <h2>🔐 登录</h2>
+                        <form @submit.prevent="login">
+                            <div class="form-group">
+                                <label>手机号</label>
+                                <input type="tel" v-model="loginForm.phone" placeholder="请输入11位手机号" required>
+                            </div>
+                            <div class="form-group">
+                                <label>密码</label>
+                                <input type="password" v-model="loginForm.password" placeholder="请输入密码" required>
+                            </div>
+                            <button type="submit" class="btn btn-primary btn-block" :disabled="loggingIn">
+                                {{ loggingIn ? '登录中...' : '登录' }}
+                            </button>
+                        </form>
+                        <p class="auth-switch">
+                            还没有账号? <a href="#" @click.prevent="currentPage = 'register'">立即注册</a>
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 注册页 -->
+            <div v-if="currentPage === 'register'" class="page auth-page">
+                <div class="container">
+                    <div class="auth-form">
+                        <h2>📝 注册</h2>
+                        <form @submit.prevent="register">
+                            <div class="form-group">
+                                <label>手机号</label>
+                                <input type="tel" v-model="registerForm.phone" placeholder="11位中国大陆手机号" required>
+                            </div>
+                            <div class="form-group">
+                                <label>昵称</label>
+                                <input type="text" v-model="registerForm.nickname" placeholder="2-20字符" required>
+                            </div>
+                            <div class="form-group">
+                                <label>密码</label>
+                                <input type="password" v-model="registerForm.password" placeholder="6-50字符" required>
+                            </div>
+                            <button type="submit" class="btn btn-primary btn-block" :disabled="registering">
+                                {{ registering ? '注册中...' : '注册' }}
+                            </button>
+                        </form>
+                        <p class="auth-switch">
+                            已有账号? <a href="#" @click.prevent="currentPage = 'login'">立即登录</a>
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 动态流页 (需登录) -->
+            <div v-if="currentPage === 'feed'" class="page feed-page">
+                <div class="container">
+                    <div class="feed-header">
+                        <h2>📱 动态流</h2>
+                        <button @click="currentPage = 'newpost'" class="btn btn-primary">发布动态</button>
+                    </div>
+
+                    <div v-if="loadingPosts" class="loading">加载中...</div>
+
+                    <div v-else-if="posts.length === 0" class="empty-state">
+                        <p>暂无动态，快去发布第一条吧！</p>
+                        <button @click="currentPage = 'newpost'" class="btn btn-secondary">发布动态</button>
+                    </div>
+
+                    <div v-else class="posts-list">
+                        <div v-for="post in posts" :key="post.id" class="post-card">
+                            <div class="post-header">
+                                <div class="post-author">
+                                    <div class="author-avatar">{{ post.author.nickname.charAt(0) }}</div>
+                                    <div class="author-info">
+                                        <h4>{{ post.author.nickname }}</h4>
+                                        <span class="post-time">{{ formatTime(post.created_at) }}</span>
+                                    </div>
+                                </div>
+                                <div v-if="post.is_protected" class="protected-badge">
+                                    🛡️ 已保护 (Level {{ post.protect_level }})
+                                </div>
+                            </div>
+
+                            <div class="post-content">
+                                <p v-if="post.content">{{ post.content }}</p>
+
+                                <div v-if="post.images && post.images.length > 0" class="post-images" :class="'images-' + post.images.length">
+                                    <img v-for="(img, idx) in post.images" :key="idx" :src="img" :alt="'Image ' + idx">
+                                </div>
+
+                                <div v-if="post.video" class="post-video">
+                                    <video :src="post.video" controls></video>
+                                </div>
+                            </div>
+
+                            <div class="post-actions">
+                                <button @click="toggleLike(post)" class="action-btn" :class="{liked: post.liked_by_me}">
+                                    <span class="icon">{{ post.liked_by_me ? '❤️' : '🤍' }}</span>
+                                    <span>{{ post.likes_count }}</span>
+                                </button>
+                                <button @click="showCommentToast" class="action-btn">
+                                    <span class="icon">💬</span>
+                                    <span>{{ post.comments_count }}</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- 分页 -->
+                        <div v-if="pagination.total > pagination.page_size" class="pagination">
+                            <button @click="loadPosts(pagination.page - 1)" :disabled="pagination.page === 1" class="btn btn-secondary">上一页</button>
+                            <span>第 {{ pagination.page }} 页 / 共 {{ Math.ceil(pagination.total / pagination.page_size) }} 页</span>
+                            <button @click="loadPosts(pagination.page + 1)" :disabled="!pagination.has_next" class="btn btn-secondary">下一页</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 发帖页 (需登录) -->
+            <div v-if="currentPage === 'newpost'" class="page newpost-page">
+                <div class="container">
+                    <h2>✍️ 发布动态</h2>
+
+                    <form @submit.prevent="publishPost" class="post-form">
+                        <div class="form-group">
+                            <label>文字内容 (可选)</label>
+                            <textarea v-model="newPost.content" placeholder="分享你的想法..." rows="4"></textarea>
+                        </div>
+
+                        <div class="form-group">
+                            <label>上传图片 (最多9张)</label>
+                            <div class="image-upload-grid">
+                                <div v-for="(img, idx) in newPost.previewImages" :key="'img-' + idx" class="image-preview-item">
+                                    <img :src="img" :alt="'Preview ' + idx">
+                                    <button type="button" @click="removeImage(idx)" class="remove-btn">✕</button>
+                                </div>
+                                <label v-if="newPost.images.length < 9" class="add-image-btn">
+                                    <input type="file" @change="addImages" accept="image/*" multiple hidden>
+                                    <span>+</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label>上传视频 (动态照片，可选)</label>
+                            <input type="file" @change="addVideo" accept="video/*">
+                            <video v-if="newPost.videoPreview" :src="newPost.videoPreview" controls class="video-preview"></video>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="checkbox-label">
+                                <input type="checkbox" v-model="newPost.is_protected">
+                                <span>启用 DiffProtect 保护</span>
+                            </label>
+                        </div>
+
+                        <div v-if="newPost.is_protected" class="protection-settings">
+                            <div class="form-group">
+                                <label>保护强度</label>
+                                <div class="level-selector">
+                                    <label v-for="level in [1, 2, 3]" :key="level" class="level-option">
+                                        <input type="radio" v-model="newPost.protect_level" :value="level">
+                                        <span>Level {{ level }}</span>
+                                        <small>{{ getLevelDesc(level) }}</small>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="checkbox-label">
+                                    <input type="checkbox" v-model="newPost.selective_protection">
+                                    <span>选择性保护 (仅保护指定人脸)</span>
+                                </label>
+                            </div>
+
+                            <div v-if="newPost.selective_protection" class="form-group">
+                                <label>选择要保护的人脸 (0-4)</label>
+                                <input type="text" v-model="newPost.protect_faces_input" placeholder="例如: 0,2 表示保护第1和第3个人脸">
+                            </div>
+                        </div>
+
+                        <div class="form-actions">
+                            <button type="button" @click="currentPage = 'feed'" class="btn btn-secondary">取消</button>
+                            <button type="submit" :disabled="publishing || !canPublish" class="btn btn-primary">
+                                {{ publishing ? '发布中...' : '发布' }}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- 设置页 (需登录) -->
+            <div v-if="currentPage === 'settings'" class="page settings-page">
+                <div class="container">
+                    <h2>⚙️ 设置</h2>
+
+                    <div v-if="loadingSettings" class="loading">加载中...</div>
+
+                    <form v-else @submit.prevent="saveSettings" class="settings-form">
+                        <div class="settings-section">
+                            <h3>默认保护设置</h3>
+                            <p class="section-desc">新发帖时的默认保护参数</p>
+
+                            <div class="form-group">
+                                <label>默认保护强度</label>
+                                <div class="level-selector">
+                                    <label v-for="level in [1, 2, 3]" :key="level" class="level-option">
+                                        <input type="radio" v-model="settings.protect_level" :value="level">
+                                        <span>Level {{ level }}</span>
+                                        <small>{{ getLevelDesc(level) }}</small>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="checkbox-label">
+                                    <input type="checkbox" v-model="settings.selective_protection">
+                                    <span>默认启用选择性保护</span>
+                                </label>
+                            </div>
+
+                            <div v-if="settings.selective_protection" class="form-group">
+                                <label>默认保护人脸索引</label>
+                                <input type="text" v-model="settings.selected_faces_input" placeholder="例如: 0,2">
+                                <small>多个索引用逗号分隔，范围 0-4</small>
+                            </div>
+                        </div>
+
+                        <div class="form-actions">
+                            <button type="submit" :disabled="savingSettings" class="btn btn-primary">
+                                {{ savingSettings ? '保存中...' : '保存设置' }}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </main>
+
+        <!-- Toast 提示 -->
+        <div v-if="toast.show" class="toast" :class="toast.type">
+            {{ toast.message }}
+        </div>
+    </div>
+
+    <!-- Vue 3 CDN -->
+    <script src="https://unpkg.com/vue@3.4.21/dist/vue.global.prod.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
